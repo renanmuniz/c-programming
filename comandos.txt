@@ -1,5 +1,10 @@
 Compilar:
 gcc nomeDoArquivo.c
 
+Compilar gerando arquivo executavel com nome que vc digitar:
+gcc -O3 printingExcapeSequences.c -o printingExcapeSequences
+"-O3" é flag de otimização (estudar depois)
+
+
 Executar:
 ./nomeDoArquivoExecutavelGerado.out
