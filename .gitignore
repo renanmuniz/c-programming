@@ -36,6 +36,9 @@
 *.x86_64
 *.hex
 
+# Build output
+CHowToProgramDeitel/build/
+
 # Debug files
 *.dSYM/
 *.su
