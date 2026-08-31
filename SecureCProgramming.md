@@ -6,8 +6,8 @@ Brief rules and examples for avoiding common C security problems.
 
 1. [Integer Safety](#part-i--integer-safety) (§1–3)
 2. [Floating-Point Safety](#part-ii--floating-point-safety) (§4–8)
-3. [Input Handling](#part-iii--input-handling) (§9–12)
-4. [Memory Safety](#part-iv--memory-safety) (§13–17)
+3. [Input Handling](#part-iii--input-handling) (§9–13)
+4. [Memory Safety](#part-iv--memory-safety) (§14–18)
 5. [Checklist & Core Principle](#secure-c-checklist)
 
 ---
@@ -398,9 +398,25 @@ Then parse and validate the input separately (e.g., with `strtol`, which offers 
 
 ---
 
+## 13. Checking `scanf` Return Value
+
+`scanf` returns the number of items successfully read. Capturing and inspecting that value is the correct way to detect a failed read.
+
+```c
+int parentsPermissionInput;
+int readSuccessfully = scanf("%d", &parentsPermissionInput);
+printf("Read successfully: %d\n", readSuccessfully);
+```
+
+`readSuccessfully` will be `1` if the integer was read correctly, `0` if the input didn't match the format, and `EOF` (typically `-1`) if the stream ended or an error occurred.
+
+**Rule:** Always store and check the return value of `scanf` — do not assume the read succeeded.
+
+---
+
 # Part IV — Memory Safety
 
-## 13. Buffer Overflow
+## 14. Buffer Overflow
 
 ### Dangerous
 
@@ -442,7 +458,7 @@ if (fgets(name, sizeof name, stdin) == NULL) {
 
 ---
 
-## 14. `memcpy` / Buffer Size
+## 15. `memcpy` / Buffer Size
 
 ### Dangerous
 
@@ -469,7 +485,7 @@ memcpy(buffer, source, size);
 
 ---
 
-## 15. Dynamic Memory Allocation
+## 16. Dynamic Memory Allocation
 
 ### Dangerous
 
@@ -503,7 +519,7 @@ if (items == NULL) {
 
 ---
 
-## 16. Array Bounds and Null Pointers
+## 17. Array Bounds and Null Pointers
 
 ### Array bounds — dangerous
 
@@ -559,7 +575,7 @@ if (ptr == NULL) {
 
 ---
 
-## 17. Use-After-Free and Double Free
+## 18. Use-After-Free and Double Free
 
 ### Use-after-free — dangerous
 
