@@ -8,7 +8,8 @@ Brief rules and examples for avoiding common C security problems.
 2. [Floating-Point Safety](#part-ii--floating-point-safety) (§4–8)
 3. [Input Handling](#part-iii--input-handling) (§9–13)
 4. [Memory Safety](#part-iv--memory-safety) (§14–18)
-5. [Checklist & Core Principle](#secure-c-checklist)
+5. [Random Numbers](#part-v--random-numbers) (§19)
+6. [Checklist & Core Principle](#secure-c-checklist)
 
 ---
 
@@ -609,6 +610,32 @@ Setting the pointer to `NULL` neutralizes both problems: dereferencing becomes a
 
 ---
 
+# Part V — Random Numbers
+
+## 19. Don't Use `rand` for Security
+
+### Dangerous
+
+```c
+#include <stdlib.h>
+
+int token = rand(); // Predictable
+```
+
+`rand` is fine for textbook examples, but not for industrial-strength applications. The C standard makes no guarantees about the quality of the sequence, and some implementations produce sequences with "distressingly non-random low-order bits." CERT guideline **MSC30-C** requires implementation-specific random-number generators so that values are not predictable — critical in cryptography and other security applications.
+
+### Safe — use your platform's secure generator
+
+- **Windows:** `BCryptGenRandom` (Cryptography API: Next Generation) — https://docs.microsoft.com/en-us/windows/win32/seccng/cng-portal
+- **POSIX/Linux:** `random` — see `man random`
+- **macOS:** `arc4random` in `<stdlib.h>` — see `man arc4random`
+
+For more information, see guideline MSC30-C at https://wiki.sei.cmu.edu/.
+
+**Rule:** Never use `rand` when unpredictability matters; use the secure random-number generator recommended for your platform.
+
+---
+
 # Secure C Checklist
 
 Before using external input:
@@ -624,6 +651,7 @@ Before using external input:
 - [ ] Avoid double-free; set pointers to `NULL` after freeing.
 - [ ] Check floating-point values for `NaN`/`inf` when they matter.
 - [ ] Validate data before using it in security-sensitive operations.
+- [ ] Use a platform-specific secure random generator instead of `rand` when predictability matters.
 
 ## Core Principle
 
