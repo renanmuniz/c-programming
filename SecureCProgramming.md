@@ -105,6 +105,37 @@ size_t total = count * element_size;
 
 **Rule:** Defined behavior does not necessarily mean safe behavior.
 
+### Use `size_t` for Object Sizes
+
+`size_t` is the standard unsigned integer type for representing the size of
+objects. Use it for results from `sizeof`, array lengths, and indexes derived
+from those lengths:
+
+```c
+#include <stddef.h>
+#include <stdio.h>
+
+int numbers[5] = {1, 2, 3, 4, 5};
+size_t arraySize = sizeof numbers / sizeof numbers[0];
+
+for (size_t i = 0; i < arraySize; ++i) {
+    printf("%zu: %d\n", i, numbers[i]);
+}
+```
+
+`size_t` is portable and helps avoid negative sizes and signed/unsigned
+conversion problems. It does not prevent overflow or make an untrusted length
+safe by itself. Validate external values before using them in size
+calculations, and check multiplication before allocating or copying memory.
+
+> **Note:** The `sizeof array / sizeof array[0]` pattern works only when the
+> expression is an actual array. When an array is passed to a function, it is
+> typically converted to a pointer, so the function must receive the length
+> separately.
+
+**Rule:** Use `size_t` for object sizes and indexes, but still validate lengths
+and check size arithmetic before accessing or allocating memory.
+
 ---
 
 # Part II — Floating-Point Safety
