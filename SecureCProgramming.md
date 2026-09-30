@@ -460,6 +460,47 @@ scanf("%s", name);
 
 A long input can exceed the buffer.
 
+### Width-limited string input
+
+```c
+char string2[20];
+
+if (scanf("%19s", string2) != 1) {
+    return 1;
+}
+```
+
+The array receiving the string must be large enough for the user's input and
+the terminating null character. `scanf` does not know the size of the array;
+with `%s`, it reads characters until a space, tab, newline, or end-of-file is
+encountered. Because `string2` has room for 20 characters, the input string
+must be limited to 19 characters so that the terminating `\0` also fits.
+
+If the user enters 20 or more characters and `%s` is used without a field
+width, `scanf` may write beyond the end of the array, causing a buffer
+overflow, a crash, or a security vulnerability. The `%19s` conversion
+specification limits the input to 19 characters and prevents this write past
+the end of `string2`.
+
+`%s` reads only one whitespace-delimited word. For example, if the user types
+`John Doe`, `scanf("%19s", string2)` stores only `John` and leaves `Doe` in
+the input stream. If the input is allowed to contain spaces, use `fgets`
+instead:
+
+```c
+char string2[20];
+
+if (fgets(string2, sizeof string2, stdin) == NULL) {
+    return 1;
+}
+
+string2[strcspn(string2, "\n")] = '\0';
+```
+
+When reviewing code, choose `fgets` for names, sentences, addresses, and other
+text that may contain spaces. Use a field width with `scanf` only when reading
+a single whitespace-delimited word is the intended behavior.
+
 ### Better
 
 ```c
@@ -583,6 +624,28 @@ if (index >= length) {
 }
 ```
 
+### Protecting array parameters with `const`
+
+When an array is passed to a function, the function receives a pointer to the
+original elements — not a copy — so it can modify the caller's data. If the
+function only needs to read the array, qualify the parameter with `const` so
+the compiler rejects any accidental or malicious write:
+
+```c
+void print_all(const int values[], size_t length)
+{
+    for (size_t i = 0; i < length; i++) {
+        printf("%d\n", values[i]);
+    }
+
+    values[0] = 0; // compilation error: read-only parameter
+}
+```
+
+This applies the principle of least privilege: the function gets only the
+access it needs, and unintended modifications become compile-time errors
+instead of runtime bugs.
+
 ### Null pointers — dangerous
 
 ```c
@@ -675,6 +738,7 @@ Before using external input:
 - [ ] Validate the input range.
 - [ ] Check arithmetic before it can overflow.
 - [ ] Check array bounds.
+- [ ] Declare read-only array parameters as `const`.
 - [ ] Check buffer sizes.
 - [ ] Check `malloc`/`calloc`/`realloc` results.
 - [ ] Never use user input as a `printf` format string.
