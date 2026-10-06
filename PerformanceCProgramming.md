@@ -6,6 +6,7 @@ Brief tips and examples for improving C program performance.
 
 1. [Static Local Arrays](#part-i--static-local-arrays)
 2. [Passing Arrays Efficiently](#part-ii--passing-arrays-efficiently)
+3. [Searching: Linear vs. Binary](#part-iii--searching-linear-vs-binary)
 
 ---
 
@@ -169,3 +170,87 @@ double average(const int values[], size_t length);
 
 **Rule:** Pass scalars and small structs by value when the callee should work
 on a copy. Pass large arrays as (`const`) pointers plus a length.
+
+---
+
+# Part III - Searching: Linear vs. Binary
+
+## 1. Prefer Binary Search for Large Sorted Arrays
+
+A linear search compares the key against every element until it finds a match,
+so in the worst case it examines all `n` elements — O(n). A binary search
+repeatedly halves the portion of a **sorted** array that can contain the key,
+so it needs at most about log2(n) comparisons — O(log n). For an array of
+10,000,000 elements, that is at most 10,000,000 comparisons versus about 24.
+
+```c
+/* requires a sorted array */
+long binarySearch(const int array[], long key, size_t size)
+{
+    long low = 0;
+    long high = (long)size - 1;
+
+    while (low <= high) {
+        long middle = low + (high - low) / 2;   /* avoids overflow */
+
+        if (array[middle] == key) {
+            return middle;
+        } else if (array[middle] > key) {
+            high = middle - 1;
+        } else {
+            low = middle + 1;
+        }
+    }
+
+    return -1;
+}
+```
+
+Each iteration discards half of the remaining elements, which is why the
+number of comparisons grows with the logarithm of the array size rather than
+the size itself.
+
+### Measured difference
+
+Searching the same key in a 10,000,000-element array — linear search on
+unsorted data (`fig06_14`) versus binary search on sorted data (`fig06_15`):
+
+```text
+➜  build git:(main) ✗ ./fig06_14
+Enter integer search key: 189756
+Found value at subscript 9818282
+Search took 21.354000 ms
+
+➜  build git:(main) ✗ ./fig06_15
+Enter integer search key: 189756
+Found value at subscript 94878
+Search took 0.046000 ms
+```
+
+The binary search was roughly 460× faster for this key.
+
+### When linear search still makes sense
+
+Binary search requires sorted data. Sorting costs O(n log n), so it only pays
+off when the array is searched repeatedly or is already sorted. For a single
+search of unsorted data, a linear search is cheaper than sorting first. Linear
+search is also fine for small arrays, where the difference is negligible, and
+it is the only option for data that can only be traversed sequentially, such
+as a linked list.
+
+```c
+long linearSearch(const int array[], long key, size_t size)
+{
+    for (size_t n = 0; n < size; n++) {
+        if (array[n] == key) {
+            return n;
+        }
+    }
+
+    return -1;
+}
+```
+
+**Rule:** Use binary search for large arrays that are sorted or searched many
+times — sort once, then search in O(log n). Use linear search for small
+arrays, one-off searches of unsorted data, or sequential-access structures.
