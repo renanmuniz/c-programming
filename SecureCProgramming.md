@@ -374,6 +374,20 @@ User input becomes the format string. An attacker can leak stack memory with `%x
 printf("%s", input);
 ```
 
+### Preferred output forms
+
+Even when displaying string literals, prefer forms that never treat data as a format string:
+
+```c
+puts("Welcome to C!"); // Outputs a '\n' automatically
+
+printf("%s", "Enter first integer: "); // Cursor stays on the same line
+```
+
+Making these forms a habit ensures a character array that might contain user input is never accidentally used as a format-control string.
+
+For more information, see CERT guideline FIO30-C at https://wiki.sei.cmu.edu/.
+
 **Rule:** Never use untrusted input as a `printf` format string. The same applies to `fprintf`, `sprintf`, `syslog`, and any other `printf`-family function.
 
 ---
@@ -412,7 +426,22 @@ for (size_t i = 0; username[i] != '\0'; ++i) {
 
 ## 12. `scanf_s` Portability
 
-`scanf_s` is not universally available because C11 Annex K is optional (and rarely implemented outside MSVC).
+The C11 standard's optional Annex K provides more secure versions of many string-processing and input/output functions. When reading a string into a character array, `scanf_s` checks that it does not write beyond the end of the array. It requires **two** arguments for each `%s` in the format string:
+
+- a character array in which to place the input string, and
+- the array's number of elements.
+
+```c
+char myString[20];
+
+if (scanf_s("%19s", myString, 20) != 1) {
+    return 1; // Conversion failed; myString is unaltered
+}
+```
+
+If the number of characters input plus the terminating null character is larger than the specified number of elements, the `%s` conversion fails. For a format string with only one conversion specification, `scanf_s` returns `0` (no conversions performed) and the array is unaltered. This protects against field widths that are too long for the array — or omitted entirely.
+
+However, `scanf_s` is not universally available because C11 Annex K is optional (and rarely implemented outside MSVC). Your compiler might also require a specific setting to enable the Annex K functions.
 
 For portable C, prefer well-controlled input such as:
 
@@ -481,6 +510,14 @@ width, `scanf` may write beyond the end of the array, causing a buffer
 overflow, a crash, or a security vulnerability. The `%19s` conversion
 specification limits the input to 19 characters and prevents this write past
 the end of `string2`.
+
+An overflow like this can overwrite other variables' values in memory — and
+if the program later writes to those variables, it can overwrite the string's
+terminating `'\0'`. Functions determine where a string ends by looking for
+that `'\0'`: `printf`, for example, reads characters from the start of the
+string until it encounters `'\0'`. If the terminator is missing, `printf`
+keeps reading (and printing) memory until it finds some later `'\0'`, which
+can produce strange results or crash the program.
 
 `%s` reads only one whitespace-delimited word. For example, if the user types
 `John Doe`, `scanf("%19s", string2)` stores only `John` and leaves `Doe` in
@@ -593,6 +630,15 @@ if (items == NULL) {
 ---
 
 ## 17. Array Bounds and Null Pointers
+
+C provides **no automatic bounds checking** for arrays. Every subscript must be greater than or equal to `0` and less than the array's number of elements. For a two-dimensional array, the row and column subscripts must each be in range (`0` to rows − 1 and `0` to columns − 1, respectively) — and the same applies to arrays with additional dimensions.
+
+Out-of-bounds accesses are common security flaws:
+
+- **Reading** outside the bounds can crash the program — or let it appear to run correctly while using bad data.
+- **Writing** outside the bounds (a buffer overflow) can corrupt data in memory, crash the program, and even allow attackers to execute their own code.
+
+For additional prevention techniques, see CERT guideline ARR30-C at https://wiki.sei.cmu.edu/.
 
 ### Array bounds — dangerous
 
